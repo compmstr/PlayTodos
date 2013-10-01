@@ -62,7 +62,7 @@ object Application extends Controller {
 			baseUpdateTaskForm.bindFromRequest.fold(
 				errors => {
 					println("Bad request: " + errors)
-					BadRequest(views.html.tasks(Task.all(uid), newTaskForm, updateTaskForm))
+					Redirect(routes.Application.tasks)
 				},
 				vals => {
 					val (id, newLabel) = vals
