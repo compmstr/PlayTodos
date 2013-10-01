@@ -39,6 +39,19 @@ object Task {
 			).executeUpdate()
 		}
 	}
+	def update(id: Long, uid: Int, newLabel: String) {
+		DB.withConnection {
+			implicit c =>
+				SQL("""
+						UPDATE task
+						SET label = '{newLabel}'
+						WHERE uid = {uid}
+						AND id = {id}
+						""")
+			.on('uid -> uid, 'id -> id, 'newLabel -> newLabel)
+			.executeUpdate()
+		}
+	}
 	
 	//Anorm ex:
 		//val Option[Long] = SQL("INSERT INTO City(name, country) values ({name}, {country})")

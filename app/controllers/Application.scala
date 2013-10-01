@@ -34,14 +34,14 @@ object Application extends Controller {
 	
 	def tasks = Action {
 		implicit request =>
-			Ok(views.html.tasks(Task.all(sessionUserId(request.session)), newTaskForm))
+			Ok(views.html.tasks(Task.all(sessionUserId(request.session)), newTaskForm, updateTaskForm))
 	}
 	def newTask = Action {
 		implicit request =>
 			val uid = sessionUserId(request.session)
 		newTaskForm.bindFromRequest.fold(
 			//errors gets bound to the form with the errors flagged
-			errors => BadRequest(views.html.tasks(Task.all(uid), errors)),
+			errors => BadRequest(views.html.tasks(Task.all(uid), errors, updateTaskForm)),
 			//value will be either a single field, or a tuple with the form values in it
 			label => {
 				Task.create(label, uid)
@@ -56,15 +56,28 @@ object Application extends Controller {
 		Redirect(routes.Application.tasks)
 	}
 	
-	def updateTask(id: Long) = TODO
+	def updateTask(id: Long) = Action {
+		implicit request =>
+			val uid = sessionUserId(request.session)
+			baseUpdateTaskForm.bindFromRequest.fold(
+				errors => {
+					println("Bad request: " + errors)
+					BadRequest(views.html.tasks(Task.all(uid), newTaskForm, updateTaskForm))
+				},
+				vals => {
+					val (id, newLabel) = vals
+					println("Updating -- %d rows update".format(Task.update(id, uid, newLabel)))
+					Redirect(routes.Application.tasks)
+				}
+			)
+	}
 	
 	def login = Action {
 		implicit request =>
 			loginForm.bindFromRequest.fold(
 				errors => BadRequest(views.html.index(errors)),
 				vals => {
-					val username = vals._1
-					val pass = vals._2
+					val (username, pass) = vals
 					println("Username: %s - Pass: %s -- res: %s".format(username, pass, User.login(username, pass)))
 					User.login(username, pass) match {
 						case None => Redirect(routes.Application.index)
@@ -82,10 +95,15 @@ object Application extends Controller {
 		"label" -> nonEmptyText
 	)
 	
-	val editTaskForm = Form(
-		"id" -> nonEmptyNumber,
-		"label" -> nonEmptyText
+	val baseUpdateTaskForm = Form(
+		tuple(
+			"id" -> longNumber,
+			"label" -> nonEmptyText
+		)
 	)
+	def updateTaskForm(id: Long, label: String): Form[(Long, String)] = {
+		baseUpdateTaskForm.fill((id, label))
+	}
 	
 	val loginForm = Form(
 		tuple(
