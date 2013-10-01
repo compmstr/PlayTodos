@@ -8,32 +8,34 @@ import play.api.Play.current
 case class Task(id: Long, label: String)
 
 object Task {
-	def all(): List[Task] = 
+	def all(uid: Long): List[Task] = 
 		//Play's DB withConnection helper
 		DB.withConnection { 
 			implicit c =>
 			//Anorm's SQL function, using task parser to return results
-			SQL("SELECT * FROM task").as(task *)
+			SQL("SELECT * FROM task WHERE uid = {uid}").on('uid -> uid).as(task *)
 			//Or: you can apply() on SQL(...) to get a lazy stream of Row instances:
 			//SQL("SELECT * FROM task")().map(row =>
 				//new Task(row[Long]("id"), row[String]("label"))).toList
 		}
-	def create(label: String) {
+	def create(label: String, uid: Int) {
 		DB.withConnection {
 			implicit c =>
-			SQL("INSERT INTO task (label) values ({label})").on(
-				'label -> label
+			SQL("INSERT INTO task (label, uid) values ({label}, {uid})").on(
+				'label -> label,
+				'uid -> uid
 			).executeUpdate()
 		}
 	}
-	def delete(id: Long) {
+	def delete(uid: Int, id: Long) {
 		DB.withConnection {
 			implicit c =>
 			//Run sql, with replacements
-			SQL("DELETE FROM task WHERE id = {id}").on(
+			SQL("DELETE FROM task WHERE id = {id} AND uid = {uid}").on(
 				//Replace {id} with id
 				//Can also use strings instead of symbols for keys
-				'id -> id
+				'id -> id,
+				'uid -> uid
 			).executeUpdate()
 		}
 	}
