@@ -6,13 +6,14 @@
 GET     /                           controllers.Application.index
 
 #Tasks
-GET /tasks controllers.Application.tasks
-POST /tasks controllers.Application.newTask
-POST /tasks/:id controllers.Application.updateTask(id: Long)
-POST /tasks/:id/delete controllers.Application.deleteTask(id: Long)
+GET /tasks controllers.Tasks.tasks
+POST /tasks controllers.Tasks.newTask
+POST /tasks/:id controllers.Tasks.updateTask(id: Long)
+POST /tasks/:id/delete controllers.Tasks.deleteTask(id: Long)
 
 #Users
 POST /user/login controllers.Application.login
+GET /user/login controllers.Application.index
 GET /user/logout controllers.Application.logout
 
 # Map static resources from the /public folder to the /assets URL path

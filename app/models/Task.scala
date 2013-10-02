@@ -39,12 +39,12 @@ object Task {
 			).executeUpdate()
 		}
 	}
-	def update(id: Long, uid: Int, newLabel: String) {
+	def update(id: Long, uid: Int, newLabel: String) = {
 		DB.withConnection {
 			implicit c =>
 				SQL("""
 						UPDATE task
-						SET label = '{newLabel}'
+						SET label = {newLabel}
 						WHERE uid = {uid}
 						AND id = {id}
 						""")
