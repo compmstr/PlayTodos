@@ -4,10 +4,15 @@ import anorm._
 import anorm.SqlParser._
 import play.api.db._
 import play.api.Play.current
+import play.api.libs.json._
 
 case class Task(id: Long, label: String)
-
 object Task {
+  //This is so that Task can be converted into a Json.Write class implicitly, and
+  //  so it can be sent out easily via Json
+  //It's a macro that sets up a JS object with fields matching this class
+  implicit val taskWrites = Json.writes[Task]
+
 	def all(uid: Long): List[Task] = 
 		//Play's DB withConnection helper
 		DB.withConnection { 

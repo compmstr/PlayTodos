@@ -7,9 +7,38 @@
         <title>@title</title>
         <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
         <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
-        <script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
+        <script src='@routes.Assets.at("javascripts/jquery-1.9.0.min.js")' type="text/javascript"></script>
+        <!--
+        -->
+        <!-- This is using the routes set up in the Tasks controller
+        -->
+        <script type="text/javascript" src="@routes.Tasks.jsRoutes"></script>
+        <script>
+            function getTaskSuccess(data){
+                var output = "<pre>";
+                output += Date() + "\n";
+                for(i = 0; i < data.length; i++){
+                    output += data[i].id + ": " + data[i].label + "\n";
+                }
+                output += "</pre>";
+                $('div#output').html(output);
+            }
+            function getTaskFail(){
+                alert("oops, broken");
+            }
+            function getTasks1(){
+                var route = jsRoutes.controllers.Tasks.tasksJson();
+                $.ajax({url: route.url, type: route.type, success: getTaskSuccess, error: getTaskFail});
+            }
+            function getTasks2(){
+                $.ajax(jsRoutes.controllers.Tasks.tasksJson())
+                .done(getTaskSuccess)
+                .fail(getTaskFail);
+            }
+        </script>
     </head>
     <body>
+        <div id='output'></div>
         @content
     </body>
 </html>
