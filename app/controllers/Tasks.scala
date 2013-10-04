@@ -78,7 +78,7 @@ object Tasks extends Controller{
 		Task.delete(uid, id)
 		Redirect(routes.Tasks.tasks)
 	}
-	
+
 	def updateTask(id: Long) = Action {
 		implicit request =>
 		val uid = Utils.sessionUserId(request.session)
@@ -88,7 +88,7 @@ object Tasks extends Controller{
 				Redirect(routes.Tasks.tasks)
 			},
 			newLabel => {
-				println("Updating id: %d -> %s -- %d rows updated".format(id, newLabel, Task.update(id, uid, newLabel)))
+				println("Updating id: %d -> %s -- %d rows updated".format(id, newLabel, Task.update(id, uid, Some(newLabel))))
 				Redirect(routes.Tasks.tasks)
 			}
 		)

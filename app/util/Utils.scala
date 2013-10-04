@@ -3,6 +3,10 @@ package util
 import play.api.mvc.{Session}
 
 object Utils {
+  def addSetClause(base: String, column: String, value:String ): String = {
+    "%s%s%s = '%s'".format(base, if(base.isEmpty) "" else ", ", column, value)
+  }
+
 	def strToInt(s: String): Option[Int] = {
 		try{
 			Some(s.toInt)

@@ -1,12 +1,13 @@
 package models
 
+import util.Utils
 import anorm._
 import anorm.SqlParser._
 import play.api.db._
 import play.api.Play.current
 import play.api.libs.json._
 
-case class Task(id: Long, label: String)
+case class Task(val uid: Long, val id: Long, val label: String, val complete: Boolean)
 object Task {
   //This is so that Task can be converted into a Json.Write class implicitly, and
   //  so it can be sent out easily via Json
@@ -57,19 +58,53 @@ object Task {
 			).executeUpdate()
 		}
 	}
-	def update(id: Long, uid: Int, newLabel: String) = {
+
+	def update(id: Long, uid: Int, newLabel: Option[String] = None, newComplete: Option[Boolean] = None) = {
 		DB.withConnection {
 			implicit c =>
+        var setClauses = "";
+        setClauses = newLabel match {
+          case Some(label: String) =>
+            Utils.addSetClause(setClauses, "label", label)
+          case None =>
+            setClauses
+        }
+        setClauses = newComplete match {
+          case Some(complete: Boolean) =>
+            Utils.addSetClause(setClauses, "complete", if(complete) "1" else "0")
+          case None => setClauses
+        }
 				SQL("""
 						UPDATE task
-						SET label = {newLabel}
+            SET {setClauses}
 						WHERE uid = {uid}
 						AND id = {id}
-						""")
-			.on('uid -> uid, 'id -> id, 'newLabel -> newLabel)
+            						""")
+			.on('uid -> uid, 'id -> id, 'setClauses -> setClauses)
 			.executeUpdate()
 		}
 	}
+
+  def toggleComplete(id: Long, uid: Long){
+    DB.withConnection {
+      implicit c =>
+         SQL(
+           """
+             UPDATE task
+             SET complete =
+               (SELECT IF(complete = 0, 1, 0) FROM task WHERE id = {id} AND uid = {uid})
+             WHERE id = {id} AND uid = {uid}
+           """)
+        .on('uid -> uid, 'id -> id)
+    }
+  }
+  def toggleComplete(task: Task){
+    toggleComplete(task.id, task.uid)
+  }
+
+  def setComplete(id: Long, uid: Int, newComplete: Boolean){
+    update(id, uid, None, Some(newComplete))
+  }
 	
 	//Anorm ex:
 		//val Option[Long] = SQL("INSERT INTO City(name, country) values ({name}, {country})")
@@ -78,9 +113,11 @@ object Task {
 	//Task is a parser, that given a ResultSet row with at least id and label, is able
   //  to create a Task value
 	val task = {
+    get[Long]("uid") ~
 		get[Long]("id") ~
-		get[String]("label") map {
-			case id~label => Task(id, label)
+		get[String]("label") ~
+    get[Int]("complete") map {
+			case uid~id~label~complete => Task(uid, id, label, (complete != 0))
 		}
 	}
 }

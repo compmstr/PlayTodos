@@ -46,4 +46,13 @@ object Application extends Controller {
 			"password" -> nonEmptyText
 		)
 	)
+
+  /**
+   * Starts up a copy of the application for when running in the play console
+   * @return
+   */
+  def consoleApp = {
+    System.setProperty("applyEvolutions.default", "true")
+    new play.core.StaticApplication(new java.io.File("."))
+  }
 }

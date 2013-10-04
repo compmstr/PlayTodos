@@ -22,9 +22,13 @@
             var newItem = createTaskListItem(task).hide();
             $("#task-list >:first-child").before(newItem);
             newItem.slideDown();
+            updateNumTasks();
+        }
+        function updateNumTasks(){
+            $('#num-tasks').html($('#task-list li').length);
         }
     </script>
-  <h1>@tasks.size task(s)</h1>
+  <h1><span id='num-tasks'>@tasks.size</span> task(s)</h1>
 	<span><a href="/user/logout">Logout </a></span>
 	<ul id="task-list">
 		@tasks.map { task =>
@@ -71,7 +75,7 @@
             return function(data){
                 setOutput("Deleted task with id: " + id);
                 //$('#task-' + id).fadeOut("normal", function(){ this.remove(); });
-                $('#task-' + id).slideUp("normal", function(){ this.remove(); });
+                $('#task-' + id).slideUp("normal", function(){ this.remove(); updateNumTasks();});
             }
         }
         function deleteTaskFailed(id){
