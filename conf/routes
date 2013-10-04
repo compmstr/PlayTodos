@@ -10,8 +10,12 @@ GET /tasks controllers.Tasks.tasks
 POST /tasks controllers.Tasks.newTask
 POST /tasks/:id controllers.Tasks.updateTask(id: Long)
 POST /tasks/:id/delete controllers.Tasks.deleteTask(id: Long)
+
 GET /ajax/tasks controllers.Tasks.tasksJson
-GET /ajax/:id/delete controllers.Tasks.deleteTaskJson(id: Long)
+GET /ajax/tasks/:id controllers.Tasks.taskByIdJson(id: Long)
+POST /ajax/tasks controllers.Tasks.newTaskJson
+POST /ajax/tasks/:id controllers.Tasks.updateTaskJson(id: Long)
+POST /ajax/:id/delete controllers.Tasks.deleteTaskJson(id: Long)
 
 GET /tasks/javascriptRoutes controllers.Tasks.jsRoutes
 

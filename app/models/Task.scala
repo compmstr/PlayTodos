@@ -13,23 +13,36 @@ object Task {
   //It's a macro that sets up a JS object with fields matching this class
   implicit val taskWrites = Json.writes[Task]
 
-	def all(uid: Long): List[Task] = 
+  def byId(uid: Long, id: Long): Option[Task] = {
+    DB.withConnection{
+      implicit c =>
+        //singleOpt is used as opposed to as for a single result
+         SQL("SELECT * FROM task WHERE uid = {uid} AND id = {id} LIMIT 1")
+        .on('uid -> uid, 'id -> id).singleOpt(task)
+    }
+  }
+
+	def all(uid: Long): List[Task] = {
 		//Play's DB withConnection helper
 		DB.withConnection { 
 			implicit c =>
 			//Anorm's SQL function, using task parser to return results
-			SQL("SELECT * FROM task WHERE uid = {uid}").on('uid -> uid).as(task *)
+			SQL("SELECT * FROM task WHERE uid = {uid} ORDER BY id DESC").on('uid -> uid).as(task *)
 			//Or: you can apply() on SQL(...) to get a lazy stream of Row instances:
 			//SQL("SELECT * FROM task")().map(row =>
 				//new Task(row[Long]("id"), row[String]("label"))).toList
 		}
-	def create(label: String, uid: Int) {
+  }
+	def create(label: String, uid: Int): Option[Long] = {
+    //executeInsert returns auto-generated key(s) upon returning
+    //executeUpdate does not
 		DB.withConnection {
 			implicit c =>
-			SQL("INSERT INTO task (label, uid) values ({label}, {uid})").on(
-				'label -> label,
-				'uid -> uid
-			).executeUpdate()
+        val newId: Option[Long] = SQL("INSERT INTO task (label, uid) values ({label}, {uid})").on(
+          'label -> label,
+          'uid -> uid
+        ).executeInsert()
+        newId
 		}
 	}
 	def delete(uid: Int, id: Long) {

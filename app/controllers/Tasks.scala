@@ -20,6 +20,19 @@ object Tasks extends Controller{
     implicit request =>
       Ok(Json.toJson(Task.all(Utils.sessionUserId(request.session)))).as("text/json")
   }
+  def taskByIdJson(id: Long) = Action{
+    implicit request =>
+      val uid = Utils.sessionUserId(request.session)
+      Task.byId(uid, id) match {
+        case Some(task: Task) =>
+          Ok(Json.obj(
+            "status" -> "success",
+            "task" -> Json.toJson(task))
+          ).as("text/json")
+        case _ =>
+          BadRequest(Json.obj("status" -> "failure", "message" -> "Task not found")).as("text/json")
+      }
+  }
 	def newTask = Action {
 		implicit request =>
 		val uid = Utils.sessionUserId(request.session)
@@ -33,6 +46,25 @@ object Tasks extends Controller{
 			}
 		)
 	}
+  def newTaskJson = Action {
+    implicit request =>
+      val uid = Utils.sessionUserId(request.session)
+      newTaskForm.bindFromRequest.fold(
+        //errors gets bound to the form with the errors flagged
+        errors => BadRequest(Json.obj("status" -> "failure", "message" -> "Validation Failed")).as("text/json"),
+        //value will be either a single field, or a tuple with the form values in it
+        label => {
+          val newId = Task.create(label, uid)
+          newId match {
+            case Some(newId: Long) =>
+              Ok(Json.obj("status" -> "success", "newTask" -> Task.byId(uid, newId))).as("text/json")
+            //Match None, or anything else
+            case _ =>
+              BadRequest(Json.obj("status" -> "failure", "message" -> "Bad response from DB")).as("text/json")
+          }
+        }
+      )
+  }
 
   def deleteTaskJson(id: Long) = Action {
     implicit request =>
@@ -62,6 +94,8 @@ object Tasks extends Controller{
 		)
 	}
 
+  def updateTaskJson(id: Long) = TODO
+
 	val newTaskForm = Form(
 		"label" -> nonEmptyText
 	)
@@ -83,6 +117,9 @@ object Tasks extends Controller{
     Ok(
       Routes.javascriptRouter("jsRoutes")(
         routes.javascript.Tasks.tasksJson,
+        routes.javascript.Tasks.taskByIdJson,
+        routes.javascript.Tasks.newTaskJson,
+        routes.javascript.Tasks.updateTaskJson,
         routes.javascript.Tasks.deleteTaskJson
       )
     ).as("text/javascript")

@@ -4,32 +4,137 @@
 @import helper._
 
 @main("Todo List") {
+    <script>
+        function genTask(id, label){ return {id: id, label: label}; }
+        function createTaskListItem(task){
+            var li = $("<li/>", {id: "task-" + task.id});
+            var form = $("<form/>", {id: "update-task-form-" + task.id});
+            var labelInput = $("<input/>", {type: "text", name: "label", id: "label-" + task.id}).val(task.label);
+            var updateButton = $("<input/>", {type: "button", onClick: "updateTask('" + task.id + "');"}).val("Update");
+            var deleteButton = $("<input/>", {type: "button", onClick: "deleteTask('" + task.id + "');"}).val("Delete");
+
+            li.append(form);
+            form.append(labelInput, updateButton, deleteButton);
+
+            return li;
+        }
+        function displayTask(task){
+            var newItem = createTaskListItem(task).hide();
+            $("#task-list >:first-child").before(newItem);
+            newItem.slideDown();
+        }
+    </script>
   <h1>@tasks.size task(s)</h1>
 	<span><a href="/user/logout">Logout </a></span>
-	<ul>
+	<ul id="task-list">
 		@tasks.map { task =>
-		  <li>
+		  <li id='task-@task.id' style>
+                <!--
 				@defining(updateTaskForm(task.label)) { curForm =>
 					@form(routes.Tasks.updateTask(task.id)){
 						@helper.input(curForm("label")) { (id, name, value, args) =>
 							<input type='text' name="@name" id="@id" value="@value" @toHtmlArgs(args) />
 						}
-						@********************************
-						  alternate way to do input:
-							@inputText(updateTaskForm(task.id, task.label)("label"))
-            ********************************@
+
+                      @* alternate way to do input: *@
+                      @inputText(updateTaskForm(task.label)("label"))
+
 						<input type="submit" value="Update" />
 					}
 				}
-				@form(routes.Tasks.deleteTask(task.id)) {
-				  <input type="submit" value="Delete" />
-				}
+              <input type="Button" onClick="deleteTask(@task.id)" value="Delete" />
+              -->
+              <form id='update-task-form-@task.id'>
+                  <input type='text' name='label' id='label-@task.id' value="@task.label" />
+                  <input type='button' value='Update' onClick='updateTask(@task.id);' />
+                  <input type="Button" onClick="deleteTask(@task.id)" value="Delete" />
+              </form>
 			</li>
 		}
 	</ul>
 	<h2>Add a new task</h2>
-	@form(routes.Tasks.newTask) {
-	  @inputText(newTaskForm("label"))
-	  <input type="submit" value="Create" />
+	@form(routes.Tasks.newTask, 'id -> "new-task-form") {
+        @* @inputText(newTaskForm("label")) *@
+        <label for='new-label'>*</label>
+        <input type='text' id='new-label' name='label' />
+        <!-- <input type="submit" value="Create" /> -->
+        <input type='button' value="Create(Ajax)" onClick="newTask();"/>
 	}
+
+    <!-- This is using the routes set up in the Tasks controller -->
+    <script type="text/javascript" src="@routes.Tasks.jsRoutes"></script>
+    <script>
+        function setOutput(text){
+            $('div#output').html(text);
+        }
+        function deleteTaskSuccess(id){
+            return function(data){
+                setOutput("Deleted task with id: " + id);
+                //$('#task-' + id).fadeOut("normal", function(){ this.remove(); });
+                $('#task-' + id).slideUp("normal", function(){ this.remove(); });
+            }
+        }
+        function deleteTaskFailed(id){
+            return function(data){
+                alert('delete failed');
+            }
+        }
+        function deleteTask(id){
+            $.ajax(jsRoutes.controllers.Tasks.deleteTaskJson(id))
+            .done(deleteTaskSuccess(id))
+            .fail(deleteTaskFailed(id));
+        }
+
+        function newTaskSuccess(data){
+            $('#new-label').val("");
+            displayTask(data.newTask);
+        }
+        function newTaskFail(data){
+            console.log(data);
+        }
+        function newTask(){
+            var route = jsRoutes.controllers.Tasks.newTaskJson();
+            $.post(route.url, $('#new-task-form').serialize())
+            .done(newTaskSuccess)
+            .fail(newTaskFail);
+        }
+
+        function updateTaskSuccess(id){
+            return function(data){
+            }
+        }
+        function updateTaskFail(id){
+            return function(data){
+            }
+        }
+        function updateTask(id){
+            var route = jsRoutes.controllers.Tasks.updateTaskJson(id);
+            $.post(route.url, $('#update-task-form-' + id).serialize())
+            .done(updateTaskSuccess(id))
+            .fail(updateTaskFail(id));
+        }
+
+
+        function getTaskSuccess(data){
+        var output = "<pre>";
+                    output += Date() + "\n";
+                    for(i = 0; i < data.length; i++){
+                        output += data[i].id + ": " + data[i].label + "\n";
+                    }
+                    output += "</pre>";
+        $('div#output').html(output);
+        }
+        function getTaskFail(){
+        alert("oops, broken");
+        }
+        function getTasks1(){
+        var route = jsRoutes.controllers.Tasks.tasksJson();
+        $.ajax({url: route.url, type: route.type, success: getTaskSuccess, error: getTaskFail});
+        }
+        function getTasks2(){
+        $.ajax(jsRoutes.controllers.Tasks.tasksJson())
+        .done(getTaskSuccess)
+        .fail(getTaskFail);
+        }
+    </script>
 }
