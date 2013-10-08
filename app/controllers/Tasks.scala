@@ -9,28 +9,38 @@ import models.Task
 import util.Utils
 import play.api.Routes
 import play.api.libs.json.Json
+import scala.concurrent.{ExecutionContext, Future, future}
+import ExecutionContext.Implicits.global
 
 object Tasks extends Controller{
 
-	def tasks = Action {
-		implicit request =>
-		Ok(views.html.tasks(Task.all(Utils.sessionUserId(request.session)), newTaskForm, updateTaskForm))
-	}
+  def tasks = Action.async {
+    implicit request =>
+      future {
+        Task.all(Utils.sessionUserId(request.session))
+      }.map {
+        taskList =>
+          Ok(views.html.tasks(taskList, newTaskForm, updateTaskForm))
+      }
+    //Ok(views.html.tasks(Task.all(Utils.sessionUserId(request.session)), newTaskForm, updateTaskForm))
+  }
   def tasksJson = Action {
     implicit request =>
       Ok(Json.toJson(Task.all(Utils.sessionUserId(request.session)))).as("text/json")
   }
-  def taskByIdJson(id: Long) = Action{
+  def taskByIdJson(id: Long) = Action.async {
     implicit request =>
-      val uid = Utils.sessionUserId(request.session)
-      Task.byId(uid, id) match {
-        case Some(task: Task) =>
-          Ok(Json.obj(
-            "status" -> "success",
-            "task" -> Json.toJson(task))
-          ).as("text/json")
-        case _ =>
-          BadRequest(Json.obj("status" -> "failure", "message" -> "Task not found")).as("text/json")
+      future {
+        val uid = Utils.sessionUserId(request.session)
+        Task.byId(uid, id)
+      }.map {
+        taskList =>
+        taskList match {
+          case Some(task) =>
+            Ok(Json.obj("status" -> "success", "task" -> Json.toJson(task))).as("text/json")
+          case None =>
+            NotFound(Json.obj("status" -> "failure", "message" -> "Task not found")).as("text/json")
+        }
       }
   }
 	def newTask = Action {
