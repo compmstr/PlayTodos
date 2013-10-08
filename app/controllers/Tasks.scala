@@ -24,9 +24,14 @@ object Tasks extends Controller{
       }
     //Ok(views.html.tasks(Task.all(Utils.sessionUserId(request.session)), newTaskForm, updateTaskForm))
   }
-  def tasksJson = Action {
+  def tasksJson = Action.async {
     implicit request =>
-      Ok(Json.toJson(Task.all(Utils.sessionUserId(request.session)))).as("text/json")
+      future {
+        Task.all(Utils.sessionUserId(request.session))
+      }.map {
+        taskList =>
+        Ok(Json.toJson(taskList)).as("text/json")
+      }
   }
   def taskByIdJson(id: Long) = Action.async {
     implicit request =>
@@ -43,37 +48,41 @@ object Tasks extends Controller{
         }
       }
   }
-	def newTask = Action {
-		implicit request =>
-		val uid = Utils.sessionUserId(request.session)
-		newTaskForm.bindFromRequest.fold(
-			//errors gets bound to the form with the errors flagged
-			errors => BadRequest(views.html.tasks(Task.all(uid), errors, updateTaskForm)),
-			//value will be either a single field, or a tuple with the form values in it
-			label => {
-				Task.create(label, uid)
-				Redirect(routes.Tasks.tasks)
-			}
-		)
-	}
-  def newTaskJson = Action {
+	def newTask = Action.async {
     implicit request =>
-      val uid = Utils.sessionUserId(request.session)
-      newTaskForm.bindFromRequest.fold(
-        //errors gets bound to the form with the errors flagged
-        errors => BadRequest(Json.obj("status" -> "failure", "message" -> "Validation Failed")).as("text/json"),
-        //value will be either a single field, or a tuple with the form values in it
-        label => {
-          val newId = Task.create(label, uid)
-          newId match {
-            case Some(newId: Long) =>
-              Ok(Json.obj("status" -> "success", "newTask" -> Task.byId(uid, newId))).as("text/json")
-            //Match None, or anything else
-            case _ =>
-              BadRequest(Json.obj("status" -> "failure", "message" -> "Bad response from DB")).as("text/json")
+      future{
+        val uid = Utils.sessionUserId(request.session)
+        newTaskForm.bindFromRequest.fold(
+          //errors gets bound to the form with the errors flagged
+          errors => BadRequest(views.html.tasks(Task.all(uid), errors, updateTaskForm)),
+          //value will be either a single field, or a tuple with the form values in it
+          label => {
+            Task.create(label, uid)
+            Redirect(routes.Tasks.tasks)
           }
-        }
-      )
+        )
+      }
+	}
+  def newTaskJson = Action.async {
+    implicit request =>
+      future{
+        val uid = Utils.sessionUserId(request.session)
+        newTaskForm.bindFromRequest.fold(
+          //errors gets bound to the form with the errors flagged
+          errors => BadRequest(Json.obj("status" -> "failure", "message" -> "Validation Failed")).as("text/json"),
+          //value will be either a single field, or a tuple with the form values in it
+          label => {
+            val newId = Task.create(label, uid)
+            newId match {
+              case Some(newId: Long) =>
+                Ok(Json.obj("status" -> "success", "newTask" -> Task.byId(uid, newId))).as("text/json")
+              //Match None, or anything else
+              case _ =>
+                BadRequest(Json.obj("status" -> "failure", "message" -> "Bad response from DB")).as("text/json")
+            }
+          }
+        )
+      }
   }
 
   def deleteTaskJson(id: Long) = Action {

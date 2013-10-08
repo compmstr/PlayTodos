@@ -17,7 +17,7 @@ class TaskRouteSpec extends Specification{
   "GET /ajax/tasks" should {
     "return a list of tasks" in {
       running(inMemory) {
-        val header = FakeRequest(GET, "/ajax/tasks")
+        val header = FakeRequest(GET, "/ajax/tasks").withSession(guestLogin)
         val result = route(header).get
 
         status(result) must equalTo(200)
@@ -26,12 +26,20 @@ class TaskRouteSpec extends Specification{
   }
 
   "GET /ajax/tasks/:id" should {
-    "return task not found" in {
+    "return task not found if task doesn't exist" in {
       running(inMemory){
-        val header = FakeRequest(GET, "/ajax/tasks/999999999")
+        val header = FakeRequest(GET, "/ajax/tasks/999999999").withSession(guestLogin)
         val result = route(header).get
 
         status(result) must equalTo(404)
+      }
+    }
+    "return a task task exists" in {
+      running(inMemory){
+        val header = FakeRequest(GET, "/ajax/tasks/1").withSession(guestLogin)
+        val result = route(header).get
+
+        status(result) must equalTo(200)
       }
     }
   }

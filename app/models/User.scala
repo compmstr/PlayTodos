@@ -18,7 +18,33 @@ object User{
 					.singleOpt(user)
 		}
 	}
-	
+
+  def getByName(name: String): Option[User] = {
+    DB.withConnection {
+      implicit c =>
+      SQL("SELECT uid, username FROM users WHERE username = {name}")
+        .on('name -> name)
+        .singleOpt(user)
+    }
+  }
+
+  def getById(id: Long): Option[User] = {
+    DB.withConnection {
+      implicit c =>
+        SQL("SELECT uid, username FROM users WHERE uid = {id}")
+          .on('id -> id)
+          .singleOpt(user)
+    }
+  }
+
+  def createUser(username: String, password: String): Option[User] = {
+    DB.withConnection {
+      implicit c =>
+        SQL("INSERT INTO users (username, password)")
+        getByName(username)
+    }
+  }
+
 	val user = {
 		get[Long]("uid") ~
 		get[String]("username") map {
