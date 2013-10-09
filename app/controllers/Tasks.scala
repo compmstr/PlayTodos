@@ -85,32 +85,38 @@ object Tasks extends Controller{
       }
   }
 
-  def deleteTaskJson(id: Long) = Action {
+  def deleteTaskJson(id: Long) = Action.async {
     implicit request =>
-    val uid = Utils.sessionUserId(request.session)
-    Task.delete(uid, id)
-    Ok(Json.obj("status" -> "success")).as("text/json")
+      future {
+        val uid = Utils.sessionUserId(request.session)
+        Task.delete(uid, id)
+        Ok(Json.obj("status" -> "success")).as("text/json")
+      }
   }
-	def deleteTask(id: Long) = Action {
+	def deleteTask(id: Long) = Action.async {
 		implicit request =>
-		val uid = Utils.sessionUserId(request.session)
-		Task.delete(uid, id)
-		Redirect(routes.Tasks.tasks)
+      future {
+        val uid = Utils.sessionUserId(request.session)
+        Task.delete(uid, id)
+        Redirect(routes.Tasks.tasks)
+      }
 	}
 
-	def updateTask(id: Long) = Action {
-		implicit request =>
-		val uid = Utils.sessionUserId(request.session)
-		baseUpdateTaskForm.bindFromRequest.fold(
-			errors => {
-				println("Bad request: " + errors.errors.map((error) => error.key + ": " + error.message).mkString(", "))
-				Redirect(routes.Tasks.tasks)
-			},
-			newLabel => {
-				println("Updating id: %d -> %s -- %d rows updated".format(id, newLabel, Task.update(id, uid, Some(newLabel))))
-				Redirect(routes.Tasks.tasks)
-			}
-		)
+	def updateTask(id: Long) = Action.async {
+    implicit request =>
+      future {
+        val uid = Utils.sessionUserId(request.session)
+        baseUpdateTaskForm.bindFromRequest.fold(
+          errors => {
+            println("Bad request: " + errors.errors.map((error) => error.key + ": " + error.message).mkString(", "))
+            Redirect(routes.Tasks.tasks)
+          },
+          newLabel => {
+            println("Updating id: %d -> %s -- %d rows updated".format(id, newLabel, Task.update(id, uid, Some(newLabel))))
+            Redirect(routes.Tasks.tasks)
+          }
+        )
+      }
 	}
 
   def updateTaskJson(id: Long) = TODO
