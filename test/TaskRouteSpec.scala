@@ -1,4 +1,6 @@
 
+import models.Task
+import play.api.libs.json.JsUndefined
 import play.api.test._
 import play.api.test.Helpers._
 import org.specs2.mutable._
@@ -16,7 +18,7 @@ class TaskRouteSpec extends Specification{
 
   "GET /ajax/tasks" should {
     "return a list of tasks" in {
-      running(inMemory) {
+      runWithTestDb  {
         val header = FakeRequest(GET, "/ajax/tasks").withSession(guestLogin)
         val result = route(header).get
 
@@ -27,18 +29,23 @@ class TaskRouteSpec extends Specification{
 
   "GET /ajax/tasks/:id" should {
     "return task not found if task doesn't exist" in {
-      running(inMemory){
+      runWithTestDb {
         val header = FakeRequest(GET, "/ajax/tasks/999999999").withSession(guestLogin)
         val result = route(header).get
 
-        status(result) must equalTo(404)
+        (contentAsJson(result) \ "status").asOpt[String].getOrElse("") mustEqual "failure"
+        status(result) mustEqual(404)
       }
     }
-    "return a task task exists" in {
-      running(inMemory){
+    "return a task if task exists" in {
+      runWithTestDb {
         val header = FakeRequest(GET, "/ajax/tasks/1").withSession(guestLogin)
         val result = route(header).get
 
+        val retObj = contentAsJson(result)
+
+        (retObj \ "task") mustNotEqual JsUndefined
+        (retObj \ "status").asOpt[String].getOrElse("") mustEqual "success"
         status(result) must equalTo(200)
       }
     }

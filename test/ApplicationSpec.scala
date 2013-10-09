@@ -22,5 +22,12 @@ class ApplicationSpec extends Specification {
         route(FakeRequest(GET, "/boum")) must beNone
       }
     }
+
+    "send a page for the index" in {
+      runWithTestDb{
+        val response = route(FakeRequest(GET, "/")).get
+        status(response) must equalTo(200)
+      }
+    }
   }
 }
